@@ -1,0 +1,1900 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>葱葱狐</title>
+  <link rel="icon" type="image/svg+xml" href="img/icon.svg">
+  <link rel="shortcut icon" href="img/icon.svg">
+  <style>
+    @font-face {
+      font-family: "DymonShouXie";
+      src: url("font/DymonShouXie-subset.woff2") format("woff2");
+      font-display: swap;
+    }
+
+    @font-face {
+      font-family: "PingFangMengMengDa";
+      src: url("font/PingFangMengMengDa-subset.woff2") format("woff2");
+      font-display: swap;
+    }
+
+    :root {
+      --bg-init: #E8E4DF;
+      --bg-gray: #C4BFB8;
+      --bg-color: #FFF8F0;
+      --accent: #FF9F1C;
+      --accent-soft: #F4A261;
+      --accent-light: #F4D03F;
+      --accent-hot: #E85D4E;
+      --text-main: #5D4037;
+      --text-muted: #8C8680;
+      --card-gray: #B8B2AA;
+      --gap: 3px;
+      --brush-size: 180px;
+      --content-shift-y: -2.6vh;
+      --flip-ease: cubic-bezier(0.34, 1.56, 0.64, 1);
+      --noise-texture: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 160 160'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23noise)' opacity='1'/%3E%3C/svg%3E");
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+      background: var(--bg-init);
+      color: var(--text-main);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    body {
+      touch-action: none;
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    .stage {
+      position: fixed;
+      inset: 0;
+      width: auto;
+      height: auto;
+      overflow: hidden;
+      background:
+        linear-gradient(140deg, rgba(235, 232, 227, 0.96) 0%, rgba(225, 220, 213, 0.92) 48%, rgba(214, 209, 202, 0.88) 100%),
+        radial-gradient(circle at 20% 20%, rgba(166, 160, 153, 0.08), transparent 32%),
+        radial-gradient(circle at 80% 18%, rgba(177, 170, 162, 0.08), transparent 28%),
+        radial-gradient(circle at 50% 82%, rgba(186, 179, 170, 0.08), transparent 34%),
+        var(--bg-init);
+      transition: background 0.6s ease-out;
+    }
+
+    body.fully-painted .stage,
+    body.mobile-mode .stage {
+      background:
+        linear-gradient(140deg, rgba(255, 248, 240, 0.96) 0%, rgba(250, 235, 216, 0.92) 48%, rgba(244, 226, 209, 0.88) 100%),
+        radial-gradient(circle at 20% 20%, rgba(255, 159, 28, 0.08), transparent 32%),
+        radial-gradient(circle at 80% 18%, rgba(244, 162, 97, 0.08), transparent 28%),
+        radial-gradient(circle at 50% 82%, rgba(244, 208, 63, 0.08), transparent 34%),
+        var(--bg-init);
+    }
+
+    body:not(.show-world) .stage {
+      background: var(--bg-init);
+    }
+
+    .stage::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(115deg, rgba(255, 255, 255, 0.06), transparent 42%),
+        linear-gradient(300deg, rgba(154, 146, 139, 0.05), transparent 38%);
+      opacity: 0.34;
+      pointer-events: none;
+      transition: opacity 0.6s ease-out, background 0.6s ease-out;
+    }
+
+    body.fully-painted .stage::before,
+    body.mobile-mode .stage::before {
+      background:
+        linear-gradient(115deg, rgba(255, 255, 255, 0.08), transparent 42%),
+        linear-gradient(300deg, rgba(232, 93, 78, 0.05), transparent 38%);
+      opacity: 0.45;
+    }
+
+    .stage::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background-image: var(--noise-texture);
+      background-size: 200px 200px;
+      background-repeat: repeat;
+      opacity: 0.065;
+      mix-blend-mode: multiply;
+      pointer-events: none;
+    }
+
+    body:not(.show-world) .stage::before {
+      opacity: 0;
+    }
+
+    .world {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      opacity: 0;
+      transform: scale(0.985);
+      transition: opacity 0.7s ease, transform 0.7s ease;
+      z-index: 2;
+    }
+
+    body.show-world .world {
+      opacity: 1;
+      transform: scale(1);
+    }
+
+    body.navigating .world {
+      opacity: 1;
+    }
+
+    .backdrop {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    .backdrop::before,
+    .backdrop::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+    }
+
+    .backdrop::before {
+      inset: -12%;
+      background:
+        radial-gradient(circle at 18% 22%, rgba(162, 156, 150, 0.12), transparent 24%),
+        radial-gradient(circle at 82% 20%, rgba(176, 170, 163, 0.1), transparent 22%),
+        radial-gradient(circle at 76% 78%, rgba(150, 144, 138, 0.09), transparent 26%),
+        linear-gradient(130deg, rgba(255, 255, 255, 0.12), transparent 42%, rgba(171, 165, 158, 0.06) 78%, transparent 100%);
+      filter: blur(72px);
+      opacity: 0.52;
+      transition: opacity 0.6s ease-out, background 0.6s ease-out;
+    }
+
+    body.fully-painted .backdrop::before,
+    body.mobile-mode .backdrop::before {
+      background:
+        radial-gradient(circle at 18% 22%, rgba(255, 159, 28, 0.14), transparent 24%),
+        radial-gradient(circle at 82% 20%, rgba(244, 162, 97, 0.12), transparent 22%),
+        radial-gradient(circle at 76% 78%, rgba(232, 93, 78, 0.1), transparent 26%),
+        linear-gradient(130deg, rgba(255, 255, 255, 0.2), transparent 42%, rgba(255, 159, 28, 0.08) 78%, transparent 100%);
+      opacity: 0.78;
+    }
+
+    .backdrop::after {
+      background-image: var(--noise-texture);
+      background-size: 180px 180px;
+      background-repeat: repeat;
+      opacity: 0.03;
+      mix-blend-mode: soft-light;
+    }
+
+    .color-world {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .color-world {
+      background:
+        radial-gradient(circle at 20% 20%, rgba(255, 159, 28, 0.12), transparent 32%),
+        radial-gradient(circle at 80% 18%, rgba(244, 162, 97, 0.1), transparent 28%),
+        radial-gradient(circle at 50% 82%, rgba(244, 208, 63, 0.1), transparent 34%),
+        var(--bg-color);
+      opacity: 1;
+      filter: grayscale(1) saturate(0.08) brightness(0.96);
+      transition: filter 0.6s ease-out;
+    }
+
+    body.fully-painted .color-world,
+    body.mobile-mode .color-world {
+      filter: none;
+    }
+
+    .mask-svg {
+      position: absolute;
+      width: 0;
+      height: 0;
+      overflow: hidden;
+      pointer-events: none;
+    }
+
+    .blob,
+    .orbit-line {
+      position: absolute;
+      transition: filter 0.6s ease-out, opacity 0.6s ease-out, background 0.6s ease-out, border-color 0.6s ease-out;
+    }
+
+    .blob {
+      position: absolute;
+      border-radius: 999px;
+      filter: grayscale(1) saturate(0.35) brightness(0.88);
+      opacity: 0.8;
+      --mouse-pull-x: 0px;
+      --mouse-pull-y: 0px;
+      will-change: transform, opacity;
+      isolation: isolate;
+    }
+
+    .blob.painted,
+    body.mobile-mode .blob {
+      filter: saturate(1.02) brightness(1.02);
+      opacity: 0.96;
+    }
+
+    .blob::before,
+    .blob::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      background: inherit;
+      pointer-events: none;
+    }
+
+    .blob::before {
+      inset: -16%;
+      opacity: 0.68;
+      filter: blur(38px);
+      transform: scale(1.12);
+    }
+
+    .blob::after {
+      inset: -8%;
+      opacity: 0.52;
+      filter: blur(22px);
+      transform: scale(1.04);
+    }
+
+    .blob-a {
+      width: 24vw;
+      height: 24vw;
+      min-width: 220px;
+      min-height: 220px;
+      left: -6vw;
+      top: 8vh;
+      background:
+        linear-gradient(145deg, rgba(255, 245, 228, 0.2), rgba(255, 159, 28, 0.06) 58%, transparent 100%),
+        radial-gradient(circle at 35% 35%, rgba(255, 159, 28, 0.28), rgba(244, 162, 97, 0.09) 64%, transparent 70%);
+      filter: blur(6px) grayscale(1) saturate(0.35) brightness(0.88);
+      animation: blob-orbit-a 20s ease-in-out infinite;
+      animation-delay: -2.5s;
+    }
+
+    .blob-b {
+      width: 18vw;
+      height: 18vw;
+      min-width: 180px;
+      min-height: 180px;
+      right: 8vw;
+      top: 14vh;
+      background:
+        linear-gradient(160deg, rgba(255, 252, 236, 0.18), rgba(244, 208, 63, 0.08) 52%, transparent 100%),
+        radial-gradient(circle at 40% 35%, rgba(244, 208, 63, 0.28), rgba(255, 159, 28, 0.08) 60%, transparent 68%);
+      filter: blur(5px) grayscale(1) saturate(0.35) brightness(0.88);
+      animation: blob-orbit-b 17.5s ease-in-out infinite;
+      animation-delay: -5.4s;
+    }
+
+    .blob-c {
+      width: 24vw;
+      height: 24vw;
+      min-width: 260px;
+      min-height: 260px;
+      right: -8vw;
+      bottom: -4vh;
+      background:
+        linear-gradient(150deg, rgba(255, 241, 236, 0.18), rgba(232, 93, 78, 0.08) 54%, transparent 100%),
+        radial-gradient(circle at 38% 34%, rgba(232, 93, 78, 0.18), rgba(244, 162, 97, 0.09) 56%, transparent 70%);
+      filter: blur(12px) grayscale(1) saturate(0.35) brightness(0.88);
+      animation: blob-orbit-c 22s ease-in-out infinite;
+      animation-delay: -8.2s;
+    }
+
+    .orbit-line {
+      left: 50%;
+      top: 50%;
+      border: 1.5px dashed rgba(141, 132, 124, 0.7);
+      border-radius: 50%;
+      opacity: 0.55;
+      filter: grayscale(1) saturate(0.25) brightness(0.9);
+      will-change: transform, opacity;
+    }
+
+    .orbit-line.painted,
+    body.mobile-mode .orbit-line {
+      border-color: rgba(255, 159, 28, 0.45);
+      filter: none;
+      opacity: 0.75;
+    }
+
+    .orbit-line.one {
+      width: 46vw;
+      height: 46vw;
+      min-width: 620px;
+      min-height: 580px;
+      transform: translate(-50%, -50%) rotate(-12deg);
+      animation: orbit-breathe-one 16s ease-in-out infinite;
+      animation-delay: -1.6s;
+    }
+
+    .orbit-line.two {
+      width: 42vw;
+      height: 46vw;
+      min-width: 520px;
+      min-height: 560px;
+      transform: translate(-50%, -50%) rotate(18deg);
+      animation: orbit-breathe-two 13.6s ease-in-out infinite;
+      animation-delay: -6.4s;
+    }
+
+    .orbit-line.three {
+      width: 50vw;
+      height: 46vw;
+      min-width: 660px;
+      min-height: 580px;
+      transform: translate(-50%, -50%) rotate(8deg);
+      animation: orbit-breathe-three 17.8s ease-in-out infinite;
+      animation-delay: -9.1s;
+    }
+
+    @keyframes blob-orbit-a {
+      0%,
+      100% {
+        transform: translate(calc(0px + var(--mouse-pull-x)), calc(0px + var(--mouse-pull-y))) scale(0.96);
+        opacity: 0.7;
+      }
+
+      25% {
+        transform: translate(calc(6px + var(--mouse-pull-x)), calc(-8px + var(--mouse-pull-y))) scale(1.01);
+        opacity: 0.82;
+      }
+
+      50% {
+        transform: translate(calc(11px + var(--mouse-pull-x)), calc(-12px + var(--mouse-pull-y))) scale(1.05);
+        opacity: 0.98;
+      }
+
+      75% {
+        transform: translate(calc(-4px + var(--mouse-pull-x)), calc(-6px + var(--mouse-pull-y))) scale(1);
+        opacity: 0.84;
+      }
+    }
+
+    @keyframes blob-orbit-b {
+      0%,
+      100% {
+        transform: translate(calc(0px + var(--mouse-pull-x)), calc(0px + var(--mouse-pull-y))) scale(0.95);
+        opacity: 0.68;
+      }
+
+      25% {
+        transform: translate(calc(-5px + var(--mouse-pull-x)), calc(6px + var(--mouse-pull-y))) scale(0.99);
+        opacity: 0.8;
+      }
+
+      50% {
+        transform: translate(calc(-9px + var(--mouse-pull-x)), calc(10px + var(--mouse-pull-y))) scale(1.04);
+        opacity: 0.94;
+      }
+
+      75% {
+        transform: translate(calc(3px + var(--mouse-pull-x)), calc(5px + var(--mouse-pull-y))) scale(0.985);
+        opacity: 0.78;
+      }
+    }
+
+    @keyframes blob-orbit-c {
+      0%,
+      100% {
+        transform: translate(calc(0px + var(--mouse-pull-x)), calc(0px + var(--mouse-pull-y))) scale(0.97);
+        opacity: 0.7;
+      }
+
+      25% {
+        transform: translate(calc(5px + var(--mouse-pull-x)), calc(-4px + var(--mouse-pull-y))) scale(1);
+        opacity: 0.8;
+      }
+
+      50% {
+        transform: translate(calc(9px + var(--mouse-pull-x)), calc(-9px + var(--mouse-pull-y))) scale(1.045);
+        opacity: 0.95;
+      }
+
+      75% {
+        transform: translate(calc(-3px + var(--mouse-pull-x)), calc(4px + var(--mouse-pull-y))) scale(0.99);
+        opacity: 0.8;
+      }
+    }
+
+    @keyframes orbit-breathe-one {
+      0%,
+      100% {
+        transform: translate(-50%, -50%) translate(0px, 0px) scale(0.985) rotate(-12deg);
+        opacity: 0.42;
+      }
+
+      50% {
+        transform: translate(-50%, -50%) translate(6px, -8px) scale(1.015) rotate(-12deg);
+        opacity: 0.7;
+      }
+    }
+
+    @keyframes orbit-breathe-two {
+      0%,
+      100% {
+        transform: translate(-50%, -50%) translate(0px, 0px) scale(0.985) rotate(18deg);
+        opacity: 0.42;
+      }
+
+      50% {
+        transform: translate(-50%, -50%) translate(-5px, 7px) scale(1.018) rotate(18deg);
+        opacity: 0.7;
+      }
+    }
+
+    @keyframes orbit-breathe-three {
+      0%,
+      100% {
+        transform: translate(-50%, -50%) translate(0px, 0px) scale(0.985) rotate(8deg);
+        opacity: 0.42;
+      }
+
+      50% {
+        transform: translate(-50%, -50%) translate(7px, -5px) scale(1.012) rotate(8deg);
+        opacity: 0.7;
+      }
+    }
+
+    .tile-grid {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      gap: 0;
+      padding: 0;
+      perspective: 1000px;
+      z-index: 1;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.18s ease;
+    }
+
+    body.tiles-launching .tile-grid,
+    body.tiles-complete .tile-grid,
+    body.brush-enabled .tile-grid {
+      opacity: 1;
+    }
+
+    .tile {
+      background: var(--bg-gray);
+      border-radius: 2px;
+      opacity: 0;
+      transform-origin: center center;
+      transform-style: preserve-3d;
+      transform: rotateX(90deg) scale(0.92);
+      box-shadow: inset 0 0 0 calc(var(--gap) * 0.5) var(--bg-init), 0 0 0 rgba(93, 64, 55, 0);
+      transition: background 0.6s ease-out, box-shadow 0.6s ease-out, border-radius 0.55s ease;
+      will-change: transform, opacity, background;
+    }
+
+    body.tiles-complete .tile {
+      border-radius: 0;
+      box-shadow: inset 0 0 0 0 var(--bg-init), 0 0 0 rgba(93, 64, 55, 0);
+    }
+
+    .tile.ready {
+      animation: tile-flip 640ms var(--flip-ease) forwards;
+      animation-delay: var(--delay, 0ms);
+    }
+
+    .tile.painted,
+    body.mobile-mode .tile {
+      background: var(--bg-color);
+      box-shadow: inset 0 0 0 1px rgba(255, 159, 28, 0.08);
+    }
+
+    @keyframes tile-flip {
+      0% {
+        opacity: 0;
+        transform: rotateX(90deg) scale(0.92);
+        box-shadow: inset 0 0 0 calc(var(--gap) * 0.5) var(--bg-init), 0 16px 20px rgba(93, 64, 55, 0.08);
+      }
+
+      58% {
+        opacity: 1;
+        transform: rotateX(-10deg) scale(1.02);
+        box-shadow:
+          inset 0 0 0 calc(var(--gap) * 0.5) var(--bg-init),
+          0 20px 28px rgba(93, 64, 55, 0.14);
+      }
+
+      100% {
+        opacity: 1;
+        transform: rotateX(0deg) scale(1);
+        box-shadow: inset 0 0 0 calc(var(--gap) * 0.5) var(--bg-init), 0 5px 12px rgba(93, 64, 55, 0.08);
+      }
+    }
+
+    .content {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      transform: translateY(var(--content-shift-y));
+      z-index: 3;
+    }
+
+    .hero {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: min(36vh, 22vw);
+      min-width: 260px;
+      max-width: 420px;
+      aspect-ratio: 0.78;
+      transform: translate(-50%, -50%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 7;
+      transition: filter 0.6s ease-out, transform 0.6s ease-out;
+    }
+
+    .hero-name {
+      position: absolute;
+      left: 50%;
+      top: -96px;
+      display: inline-block;
+      margin: 0;
+      color: var(--text-muted);
+      font-size: clamp(2.4rem, 4.8vw, 3.9rem);
+      line-height: 1;
+      letter-spacing: 0.05em;
+      transform: translateX(-50%);
+      transition: color 0.6s ease-out, transform 0.28s ease, text-shadow 0.28s ease;
+      z-index: 5;
+      white-space: nowrap;
+    }
+
+    .hero-name-char {
+      display: inline-block;
+      transition: transform 0.28s ease, text-shadow 0.28s ease, letter-spacing 0.28s ease;
+    }
+
+    .hero-name-char + .hero-name-char {
+      margin-left: 0.08em;
+    }
+
+    .hero-name-char.is-handwritten {
+      font-family: "DymonShouXie", "Segoe Print", "Bradley Hand", "Comic Sans MS", "Marker Felt", cursive;
+      letter-spacing: 0.02em;
+      transform: rotate(-3deg) scale(1.06);
+      text-shadow: 0 8px 18px rgba(244, 162, 97, 0.16);
+    }
+
+    .hero-shell {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      margin-top: 42px;
+      padding: 18px;
+      border-radius: 36px;
+      background: linear-gradient(165deg, rgba(255, 243, 224, 0.95), rgba(255, 248, 240, 0.88));
+      border: 3px dashed var(--accent);
+      box-shadow: 0 18px 50px rgba(93, 64, 55, 0.12);
+      overflow: hidden;
+    }
+
+    .hero-shell::before {
+      content: "";
+      position: absolute;
+      inset: 12px;
+      border: 1.5px solid rgba(255, 159, 28, 0.22);
+      border-radius: 28px 34px 30px 42px;
+      transform: rotate(-1.8deg);
+      pointer-events: none;
+    }
+
+    .hero-shell::after {
+      content: "";
+      position: absolute;
+      inset: auto 18px 14px auto;
+      width: 76px;
+      height: 76px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(244, 208, 63, 0.22), transparent 68%);
+      pointer-events: none;
+    }
+
+    .revealable {
+      filter: grayscale(1) saturate(0.25) brightness(0.82);
+      transition:
+        filter 0.6s ease-out,
+        color 0.6s ease-out,
+        opacity 0.6s ease-out,
+        border-color 0.6s ease-out,
+        background 0.6s ease-out,
+        box-shadow 0.6s ease-out;
+    }
+
+    .revealable.painted,
+    body.mobile-mode .revealable {
+      filter: none;
+    }
+
+    .avatar-visual {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      margin-top: 0;
+      border-radius: 28px;
+      overflow: hidden;
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.45), transparent),
+        linear-gradient(180deg, rgba(244, 162, 97, 0.16), rgba(255, 159, 28, 0.1));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .avatar-image {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .avatar-slogan {
+      position: absolute;
+      left: 50%;
+      bottom: 8%;
+      width: min(64%, 278px);
+      transform: translateX(-50%) rotate(-6deg);
+      transform-origin: center;
+      display: block;
+      z-index: 2;
+      pointer-events: none;
+      filter: drop-shadow(0 14px 24px rgba(93, 64, 55, 0.18));
+    }
+
+    .nameplate {
+      position: absolute;
+      left: 50%;
+      top: calc(50% - min(31vh, 258px));
+      transform: translateX(-50%);
+      width: min(720px, 92vw);
+      text-align: center;
+      z-index: 8;
+    }
+
+    .eyebrow {
+      position: absolute;
+      left: 50%;
+      top: 10px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 210px;
+      padding: 10px 18px 12px;
+      border-radius: 18px 18px 22px 22px;
+      background: rgba(255, 248, 240, 0.94);
+      border: 1.5px solid rgba(255, 159, 28, 0.22);
+      color: var(--text-muted);
+      font-size: 12px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      transform: translateX(-50%) rotate(-5deg);
+      box-shadow: 0 10px 26px rgba(93, 64, 55, 0.12);
+      z-index: 4;
+    }
+
+    .eyebrow::before {
+      content: "";
+      position: absolute;
+      left: 18%;
+      right: 18%;
+      top: -20px;
+      height: 20px;
+      background:
+        linear-gradient(rgba(244, 162, 97, 0.7), rgba(244, 162, 97, 0.7)) left bottom / 1.5px 20px no-repeat,
+        linear-gradient(rgba(244, 162, 97, 0.7), rgba(244, 162, 97, 0.7)) right bottom / 1.5px 20px no-repeat;
+      pointer-events: none;
+    }
+
+    .nameplate p {
+      margin: 0;
+      color: var(--text-muted);
+      font-size: clamp(0.95rem, 1.3vw, 1.08rem);
+      line-height: 1.6;
+      white-space: nowrap;
+      transition: color 0.6s ease-out;
+    }
+
+    .bottom-center-image {
+      position: absolute;
+      left: 50%;
+      bottom: 22px;
+      width: min(120px, 14vw);
+      min-width: 60px;
+      transform: translateX(-50%);
+      display: block;
+      pointer-events: none;
+      z-index: 6;
+      filter: drop-shadow(0 12px 28px rgba(93, 64, 55, 0.16));
+    }
+
+    .tagline-text {
+      display: inline-flex;
+      align-items: baseline;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 0.22em;
+    }
+
+    .tagline-piece {
+      display: inline-flex;
+      align-items: baseline;
+      gap: 0.16em;
+      position: relative;
+    }
+
+    .tagline-piece:nth-child(odd) .tagline-adjective {
+      --tagline-tilt: -2deg;
+    }
+
+    .tagline-piece:nth-child(even) .tagline-adjective {
+      --tagline-tilt: 1.6deg;
+    }
+
+    .tagline-adjective {
+      appearance: none;
+      position: relative;
+      border: 0;
+      padding: 0 0.18em 0.08em;
+      background: none;
+      color: color-mix(in srgb, var(--accent-hot) 62%, var(--text-main) 38%);
+      font: inherit;
+      font-family: "PingFangMengMengDa", "Segoe Print", "Bradley Hand", "Comic Sans MS", "Marker Felt", cursive;
+      font-size: 1.26em;
+      line-height: 1.05;
+      cursor: pointer;
+      text-decoration-line: underline;
+      text-decoration-style: dashed;
+      text-decoration-color: rgba(232, 93, 78, 0.5);
+      text-decoration-thickness: 1.5px;
+      text-underline-offset: 0.18em;
+      transform: rotate(var(--tagline-tilt, -2deg));
+      transition:
+        color 0.22s ease,
+        transform 0.22s ease,
+        text-decoration-color 0.22s ease,
+        text-shadow 0.22s ease,
+        opacity 0.22s ease;
+    }
+
+    .tagline-adjective::after {
+      content: "";
+      position: absolute;
+      right: -0.18em;
+      top: 50%;
+      width: 0.34em;
+      height: 0.34em;
+      border-radius: 50%;
+      background: currentColor;
+      opacity: 0.55;
+      transform: translateY(-50%) scale(0.82);
+      pointer-events: none;
+    }
+
+    .tagline-adjective-label {
+      position: relative;
+      z-index: 1;
+    }
+
+    .tagline-adjective:hover {
+      color: var(--accent-hot);
+      text-decoration-color: rgba(232, 93, 78, 0.9);
+      text-shadow: 0 6px 16px rgba(232, 93, 78, 0.18);
+      transform: rotate(var(--tagline-tilt, -2deg)) translateY(-2px) scale(1.03);
+    }
+
+    .tagline-adjective:focus-visible {
+      outline: 2px solid rgba(232, 93, 78, 0.28);
+      outline-offset: 4px;
+      border-radius: 6px;
+    }
+
+    .tagline-adjective.is-switching {
+      animation: adjective-pop 0.36s ease;
+    }
+
+    .tagline-role,
+    .tagline-divider {
+      color: inherit;
+    }
+
+    .tagline-divider {
+      opacity: 0.72;
+      margin: 0 0.18em 0 0.1em;
+    }
+
+    @keyframes adjective-pop {
+      0% {
+        transform: rotate(calc(var(--tagline-tilt, -2deg) - 4deg)) scale(0.9);
+      }
+
+      60% {
+        transform: rotate(calc(var(--tagline-tilt, -2deg) + 2deg)) scale(1.08);
+      }
+
+      100% {
+        transform: rotate(var(--tagline-tilt, -2deg)) scale(1);
+      }
+    }
+
+    .hero.painted .hero-name,
+    body.mobile-mode .hero .hero-name,
+    .nameplate.painted p,
+    body.mobile-mode .nameplate p {
+      color: var(--text-main);
+    }
+
+    .orbit-nav {
+      position: absolute;
+      inset: 0;
+      z-index: auto;
+    }
+
+    .card {
+      display: block;
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: var(--w);
+      height: var(--h);
+      transform:
+        translate(-50%, -50%)
+        translate(var(--orbit-x, 0px), var(--orbit-y, 0px))
+        scale(var(--orbit-scale, 1))
+        rotate(var(--orbit-tilt, 0deg));
+      transform-style: preserve-3d;
+      z-index: var(--card-z, 6);
+      opacity: var(--orbit-opacity, 1);
+      filter: grayscale(1) saturate(0.25) brightness(0.82) blur(var(--orbit-blur, 0px));
+      pointer-events: none;
+      transition: filter 0.45s ease, opacity 0.45s ease;
+    }
+
+    .card.painted,
+    body.mobile-mode .card {
+      filter: blur(var(--orbit-blur, 0px));
+    }
+
+    body.brush-enabled .card.painted,
+    body.mobile-mode .card {
+      pointer-events: auto;
+    }
+
+    .card:hover {
+      z-index: 14;
+      opacity: 1;
+      filter: none;
+    }
+
+    .card-core {
+      display: block;
+      position: relative;
+      width: 100%;
+      height: 100%;
+      transform-style: preserve-3d;
+      transition: transform 0.72s cubic-bezier(0.22, 1, 0.36, 1), filter 0.3s ease;
+    }
+
+    .card:hover .card-core {
+      transform: rotateY(180deg) scale(1.05);
+    }
+
+    .card.leaving .card-core {
+      animation: card-exit 420ms ease forwards;
+    }
+
+    @keyframes card-exit {
+      0% {
+        opacity: 1;
+        transform: scale(1);
+      }
+
+      100% {
+        opacity: 0;
+        transform: scale(1.14);
+      }
+    }
+
+    .card-face {
+      position: absolute;
+      inset: 0;
+      backface-visibility: hidden;
+      padding: 0;
+      overflow: visible;
+    }
+
+    .card-media {
+      display: block;
+      width: 100%;
+      height: 100%;
+      filter: drop-shadow(0 20px 28px rgba(93, 64, 55, 0.18));
+    }
+
+    .card-image {
+      display: block;
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      user-select: none;
+      -webkit-user-drag: none;
+      pointer-events: none;
+    }
+
+    .card-face.back {
+      transform: rotateY(180deg);
+    }
+
+    .brush-cursor {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: calc(var(--brush-size) * 2);
+      height: calc(var(--brush-size) * 2);
+      border-radius: 50%;
+      background:
+        radial-gradient(circle, rgba(255, 159, 28, 0.18), rgba(255, 159, 28, 0.12) 36%, rgba(255, 159, 28, 0.04) 58%, transparent 74%);
+      filter: blur(18px);
+      pointer-events: none;
+      opacity: 0;
+      transform: translate(-50%, -50%);
+      transition: opacity 0.25s ease-out;
+      mix-blend-mode: multiply;
+      z-index: 9;
+    }
+
+    body.brush-enabled .brush-cursor {
+      opacity: 1;
+    }
+
+    body.fully-painted .brush-cursor,
+    body.mobile-mode .brush-cursor {
+      opacity: 0;
+    }
+
+    @media (max-width: 1100px) {
+      .hero {
+        width: min(42vh, 26vw);
+        min-width: 240px;
+      }
+
+      .card {
+        width: calc(var(--w) * 0.92);
+        height: calc(var(--h) * 0.92);
+      }
+    }
+
+    @media (max-width: 900px), (hover: none), (pointer: coarse) {
+      body {
+        touch-action: auto;
+      }
+
+      .tile-grid,
+      .brush-cursor {
+        display: none;
+      }
+
+      .world {
+        opacity: 1;
+        transform: none;
+      }
+
+      .hero {
+        width: min(34vh, 54vw);
+        min-width: 190px;
+        top: 49%;
+      }
+
+      .hero-name {
+        top: -74px;
+      }
+
+      .nameplate {
+        top: calc(50% - min(27vh, 206px));
+        width: min(96vw, 720px);
+      }
+
+      .card {
+        width: calc(var(--w) * 0.78);
+        height: calc(var(--h) * 0.78);
+      }
+
+      .orbit-line.one {
+        min-width: 360px;
+        min-height: 260px;
+      }
+
+      .orbit-line.two {
+        min-width: 320px;
+        min-height: 320px;
+      }
+
+      .orbit-line.three {
+        min-width: 420px;
+        min-height: 220px;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .blob,
+      .orbit-line {
+        animation: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="stage">
+    <div class="tile-grid" id="tileGrid" aria-hidden="true"></div>
+
+    <section class="world" id="world">
+      <svg class="mask-svg" aria-hidden="true">
+        <defs>
+          <filter id="brushSoftener">
+            <feGaussianBlur stdDeviation="18"></feGaussianBlur>
+          </filter>
+          <mask id="brushRevealMask" maskUnits="userSpaceOnUse">
+            <rect id="maskBase" x="0" y="0" width="100%" height="100%" fill="white"></rect>
+            <g id="brushDots" filter="url(#brushSoftener)"></g>
+          </mask>
+        </defs>
+      </svg>
+      
+      <div class="color-world" aria-hidden="true"></div>
+      
+      <div class="backdrop">
+        <div class="blob blob-a revealable paint-target" data-paint-padding="120"></div>
+        <div class="blob blob-b revealable paint-target" data-paint-padding="120"></div>
+        <div class="blob blob-c revealable paint-target" data-paint-padding="140"></div>
+        <div class="orbit-line one revealable paint-target" data-paint-padding="70"></div>
+        <div class="orbit-line two revealable paint-target" data-paint-padding="70"></div>
+        <div class="orbit-line three revealable paint-target" data-paint-padding="70"></div>
+      </div>
+
+      <section class="content">
+        
+        <article class="hero revealable paint-target" data-paint-padding="120">
+          <h1 class="hero-name">YOUR NAME</h1>
+          <div class="hero-shell">
+            <div class="eyebrow">互动式个人主页</div>
+            <div class="avatar-visual">
+              <img
+                class="avatar-image"
+                alt="个人形象占位"
+                src="data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 620 820'%3E%3Crect width='620' height='820' rx='72' fill='%23FFF3E0'/%3E%3Cg fill='none' stroke='%23FF9F1C' stroke-width='18' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='310' cy='240' r='92' stroke-dasharray='10 18'/%3E%3Cpath d='M184 560c20-116 87-176 126-176s106 60 126 176' stroke-dasharray='12 18'/%3E%3Cpath d='M188 654h244' stroke-dasharray='10 14'/%3E%3C/g%3E%3Ctext x='310' y='708' fill='%235D4037' font-size='42' font-family='Segoe UI, sans-serif' text-anchor='middle'%3EYOUR AVATAR%3C/text%3E%3C/svg%3E"
+              >
+              <img class="avatar-slogan" src="img/slogen.png" alt="" aria-hidden="true">
+            </div>
+          </div>
+        </article>
+
+        
+        <nav aria-label="主页卡片导航"></nav>
+
+        
+        <section class="nameplate revealable paint-target" data-paint-padding="140">
+          <p></p>
+        </section>
+
+        <img class="bottom-center-image" src="img/eimcc.png" alt="" aria-hidden="true">
+
+      </section>
+    </section>
+
+    <div class="brush-cursor" id="brushCursor" aria-hidden="true"></div>
+  </main>
+
+  <script>
+    (() => {
+      const body = document.body;
+      const tileGrid = document.getElementById("tileGrid");
+      const brushCursor = document.getElementById("brushCursor");
+      const brushDots = document.getElementById("brushDots");
+      const maskBase = document.getElementById("maskBase");
+      const colorWorld = document.querySelector(".color-world");
+      const backgroundBlobs = Array.from(document.querySelectorAll(".backdrop .blob"));
+      const orbitNav = document.querySelector(".content nav");
+      const avatarImage = document.querySelector(".avatar-image");
+      const avatarSlogan = document.querySelector(".avatar-slogan");
+      const heroEyebrow = document.querySelector(".hero-shell .eyebrow");
+      const heroName = document.querySelector(".hero-name");
+      const heroTagline = document.querySelector(".nameplate p");
+      const isMobileMode = window.matchMedia("(max-width: 900px), (hover: none), (pointer: coarse)");
+
+      const PAGE_SETTINGS = {
+        profile: {
+
+          eyebrow: "What dose fox say?",
+          name: "葱葱狐",
+
+          sharedAdjectives: ["可爱的", "软绵绵的", "灵动的", "元气的", "会发光的", "爱做梦的", "有趣的", "古灵精怪的", "脑洞大开的", "爱整活的", "天马行空的", "会冒险的", "毛茸茸的", "亮晶晶的", "捣蛋的", "跳跳糖一样的", "慢半拍的", "满脑袋星星的", "像在发芽的", "会偷偷藏宝藏的", "爱发呆的", "咕噜咕噜冒泡的"],
+
+          taglineParts: [
+            {
+              role: "插画设计师",
+              current: "可爱的",
+            },
+            {
+              role: "独立游戏设计师",
+              current: "有趣的",
+            },
+          ],
+          avatarAlt: "个人形象占位",
+
+          avatarSrc: "img/avatar.png",
+
+          sloganSrc: "img/slogen.png",
+        },
+        background: {
+
+          image: "",
+          size: "cover",
+          position: "center center",
+        },
+        cards: [
+
+          {
+            href: "https://qqgg.art/toolbox",
+            paintPadding: 96,
+            angle: 202,
+            rx: 25,
+            ry: 30,
+            tilt: -9,
+            speed: 7.8,
+            width: "132px",
+            height: "132px",
+            frontImage: "img/1A@2x.png",
+            backImage: "img/1B@2x.png",
+            frontTitle: "工具箱",
+          },
+          {
+            href: "https://qqgg.art",
+            paintPadding: 96,
+            angle: 328,
+            rx: 26,
+            ry: 30,
+            tilt: 8,
+            speed: 7.8,
+            width: "156px",
+            height: "122px",
+            frontImage: "img/2A@2x.png",
+            backImage: "img/2B@2x.png",
+            frontTitle: "作品集",
+          },
+          {
+            href: "https://qqgg.art",
+            paintPadding: 92,
+            angle: 20,
+            rx: 27,
+            ry: 30,
+            tilt: 6,
+            speed: 7.8,
+            width: "138px",
+            height: "138px",
+            frontImage: "img/3A@2x.png",
+            backImage: "img/3B@2x.png",
+            frontTitle: "博客文章",
+          },
+          {
+            href: "https://qqgg.art",
+            paintPadding: 100,
+            angle: 148,
+            rx: 25,
+            ry: 29,
+            tilt: -11,
+            speed: 7.8,
+            width: "160px",
+            height: "144px",
+            frontImage: "img/4A@2x.png",
+            backImage: "img/4B@2x.png",
+            frontTitle: "项目经历",
+          },
+          {
+            href: "https://qqgg.art",
+            paintPadding: 88,
+            angle: 262,
+            rx: 20,
+            ry: 29,
+            tilt: 5,
+            speed: 7.8,
+            width: "124px",
+            height: "124px",
+            frontImage: "img/5A@2x.png",
+            backImage: "img/5B@2x.png",
+            frontTitle: "联系方式",
+          },
+          {
+            href: "https://qqgg.art",
+            paintPadding: 92,
+            angle: 92,
+            rx: 21,
+            ry: 31,
+            tilt: -8,
+            speed: 7.8,
+            width: "154px",
+            height: "122px",
+            frontImage: "img/6A@2x.png",
+            backImage: "img/6B@2x.png",
+            frontTitle: "音乐 / 爱好",
+          },
+          {
+            href: "https://qqgg.art",
+            paintPadding: 96,
+            angle: 304,
+            rx: 22,
+            ry: 29,
+            tilt: -6,
+            speed: 7.8,
+            width: "166px",
+            height: "112px",
+            frontImage: "img/7A@2x.png",
+            backImage: "img/7B@2x.png",
+            frontTitle: "灵感碎片",
+          },
+        ],
+      };
+
+      const state = {
+        tileMeta: [],
+        paintTargets: [],
+        orbitCards: [],
+        orbitPhase: 0,
+        orbitSpeed: 0,
+        orbitRx: 0,
+        orbitRy: 0,
+        brushEnabled: false,
+        pointerX: window.innerWidth / 2,
+        pointerY: window.innerHeight / 2,
+        brushX: window.innerWidth / 2,
+        brushY: window.innerHeight / 2,
+        ticking: false,
+        brushStampCount: 0,
+        lastBrushStamp: null,
+        lastOrbitTs: 0,
+      };
+
+      function clamp(value, min, max) {
+        return Math.min(max, Math.max(min, value));
+      }
+
+      function shortestAngleDelta(from, to) {
+        let diff = to - from;
+        while (diff > Math.PI) {
+          diff -= Math.PI * 2;
+        }
+        while (diff < -Math.PI) {
+          diff += Math.PI * 2;
+        }
+        return diff;
+      }
+
+      function escapeHtml(value) {
+
+        return String(value)
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;")
+          .replaceAll("'", "&#39;");
+      }
+
+      function renderInteractiveTagline(parts) {
+
+        if (!parts || !parts.length) {
+          return "";
+        }
+
+        return `
+          <span class="tagline-text">
+            ${parts.map((part, index) => {
+              const adjective = part.current || part.adjectives?.[0] || "";
+              const divider = index < parts.length - 1 ? '<span class="tagline-divider">丨</span>' : "";
+              return `
+                <span class="tagline-piece">
+                  <button class="tagline-adjective" type="button" data-tagline-index="${index}">
+                    <span class="tagline-adjective-label">${escapeHtml(adjective)}</span>
+                  </button>
+                  <span class="tagline-role">${escapeHtml(part.role || "")}</span>
+                </span>
+                ${divider}
+              `;
+            }).join("")}
+          </span>
+        `;
+      }
+
+      function renderHeroName(name) {
+
+        return Array.from(name || "").map((char) => {
+          if (char.trim()) {
+            return `<span class="hero-name-char">${escapeHtml(char)}</span>`;
+          }
+          return `<span class="hero-name-char">${char}</span>`;
+        }).join("");
+      }
+
+      function getTaglineAdjectivePool(part) {
+        if (Array.isArray(part?.adjectives) && part.adjectives.length) {
+          return part.adjectives;
+        }
+
+        return Array.isArray(PAGE_SETTINGS.profile.sharedAdjectives)
+          ? PAGE_SETTINGS.profile.sharedAdjectives
+          : [];
+      }
+
+      function pickNextAdjective(list, current, blocked = []) {
+        if (!Array.isArray(list) || !list.length) {
+          return current || "";
+        }
+
+        const blockedSet = new Set(blocked.filter(Boolean));
+        const candidates = list.filter((item) => item !== current && !blockedSet.has(item));
+        if (!candidates.length) {
+          const fallback = list.filter((item) => !blockedSet.has(item));
+          if (!fallback.length) {
+            return current || list[0];
+          }
+          return fallback[Math.floor(Math.random() * fallback.length)];
+        }
+
+        return candidates[Math.floor(Math.random() * candidates.length)];
+      }
+
+      function ensureUniqueTaglineAdjectives() {
+        const parts = PAGE_SETTINGS.profile.taglineParts || [];
+        parts.forEach((part, index) => {
+          const blocked = parts
+            .filter((_, partIndex) => partIndex !== index)
+            .map((item) => item.current);
+
+          if (!part.current || blocked.includes(part.current)) {
+            part.current = pickNextAdjective(getTaglineAdjectivePool(part), part.current, blocked);
+          }
+        });
+      }
+
+      function applyUserContent() {
+
+        if (heroEyebrow) {
+          heroEyebrow.textContent = PAGE_SETTINGS.profile.eyebrow;
+        }
+
+        if (heroName) {
+          heroName.innerHTML = renderHeroName(PAGE_SETTINGS.profile.name);
+        }
+
+        if (heroTagline) {
+          ensureUniqueTaglineAdjectives();
+          heroTagline.innerHTML = renderInteractiveTagline(PAGE_SETTINGS.profile.taglineParts);
+        }
+
+        if (avatarImage) {
+          avatarImage.alt = PAGE_SETTINGS.profile.avatarAlt;
+          if (PAGE_SETTINGS.profile.avatarSrc) {
+            avatarImage.src = PAGE_SETTINGS.profile.avatarSrc;
+          }
+        }
+
+        if (avatarSlogan) {
+          if (PAGE_SETTINGS.profile.sloganSrc) {
+            avatarSlogan.src = PAGE_SETTINGS.profile.sloganSrc;
+            avatarSlogan.style.display = "block";
+          } else {
+            avatarSlogan.style.display = "none";
+          }
+        }
+
+        if (colorWorld && PAGE_SETTINGS.background.image) {
+          colorWorld.style.background = `
+            radial-gradient(circle at 20% 20%, rgba(255, 159, 28, 0.12), transparent 32%),
+            radial-gradient(circle at 80% 18%, rgba(244, 162, 97, 0.1), transparent 28%),
+            radial-gradient(circle at 50% 82%, rgba(244, 208, 63, 0.1), transparent 34%),
+            url("${PAGE_SETTINGS.background.image}") ${PAGE_SETTINGS.background.position} / ${PAGE_SETTINGS.background.size} no-repeat,
+            var(--bg-color)
+          `;
+        }
+      }
+
+      function renderOrbitCardsFromSettings() {
+
+        if (!orbitNav) {
+          return;
+        }
+
+        orbitNav.className = "orbit-nav";
+        orbitNav.setAttribute("aria-label", "主页卡片导航");
+        orbitNav.innerHTML = PAGE_SETTINGS.cards.map((card) => {
+          const frontFace = `
+                <span class="card-face front">
+                  <span class="card-media">
+                    <img class="card-image" src="${escapeHtml(card.frontImage)}" alt="${escapeHtml(card.frontTitle || "")}">
+                  </span>
+                </span>
+              `;
+          const backFace = `
+                <span class="card-face back">
+                  <span class="card-media">
+                    <img class="card-image" src="${escapeHtml(card.backImage)}" alt="">
+                  </span>
+                </span>
+              `;
+
+          return `
+            <a
+              class="card revealable paint-target"
+              href="${escapeHtml(card.href)}"
+              aria-label="${escapeHtml(card.frontTitle || "")}"
+              data-paint-padding="${card.paintPadding}"
+              data-angle="${card.angle}"
+              data-rx="${card.rx}"
+              data-ry="${card.ry}"
+              data-tilt="${card.tilt}"
+              data-speed="${card.speed}"
+              style="--w:${card.width}; --h:${card.height};"
+            >
+              <span class="card-core">
+                ${frontFace}
+                ${backFace}
+              </span>
+            </a>
+          `;
+        }).join("");
+      }
+
+      function setupOrbitCards() {
+
+        const cards = Array.from(document.querySelectorAll(".card"));
+        const totalCards = cards.length || 1;
+        const baseAngle = (Number(cards[0]?.dataset.angle || 0) * Math.PI) / 180;
+        const averageRx = cards.reduce((sum, card) => sum + Number(card.dataset.rx || 26), 0) / totalCards;
+        const averageRy = cards.reduce((sum, card) => sum + Number(card.dataset.ry || 24), 0) / totalCards;
+        const sharedSpeed = (Number(cards[0]?.dataset.speed || 7.8) * Math.PI) / 180;
+
+        state.orbitPhase = baseAngle;
+        state.orbitSpeed = sharedSpeed;
+        state.orbitRx = averageRx;
+        state.orbitRy = averageRy;
+
+        state.orbitCards = cards.map((card, index) => {
+          const slotAngle = (Math.PI * 2 * index) / totalCards;
+          const initialAngle = baseAngle + slotAngle;
+          const orbitCard = {
+            element: card,
+            angle: initialAngle,
+            slotAngle,
+            tilt: Number(card.dataset.tilt || 0),
+            paused: false,
+            catchingUp: false,
+          };
+
+          card.addEventListener("mouseenter", () => {
+            orbitCard.paused = true;
+            orbitCard.catchingUp = false;
+          });
+
+          card.addEventListener("mouseleave", () => {
+            orbitCard.paused = false;
+            orbitCard.catchingUp = true;
+          });
+
+          return orbitCard;
+        });
+
+        if (!state.lastOrbitTs) {
+          requestAnimationFrame(stepOrbit);
+        }
+      }
+
+      function updateOrbitTargets() {
+
+        state.paintTargets.forEach((target) => {
+          if (!target.element.classList.contains("card")) {
+            return;
+          }
+          const rect = target.element.getBoundingClientRect();
+          target.x = rect.left + rect.width / 2;
+          target.y = rect.top + rect.height / 2;
+          target.radius = Math.max(rect.width, rect.height) / 2 + Number(target.element.dataset.paintPadding || 0);
+        });
+      }
+
+      function updateBlobAttraction() {
+        if (!backgroundBlobs.length) {
+          return;
+        }
+
+        backgroundBlobs.forEach((blob) => {
+          const rect = blob.getBoundingClientRect();
+          const centerX = rect.left + rect.width / 2;
+          const centerY = rect.top + rect.height / 2;
+          const dx = state.pointerX - centerX;
+          const dy = state.pointerY - centerY;
+          const distance = Math.hypot(dx, dy) || 1;
+          const influenceRadius = Math.max(rect.width, rect.height) * 1.15 + 160;
+          const influence = clamp(1 - distance / influenceRadius, 0, 1);
+          const maxPull = Math.max(8, Math.min(rect.width, rect.height) * 0.055);
+          const targetX = (dx / distance) * maxPull * influence;
+          const targetY = (dy / distance) * maxPull * influence;
+          const currentX = Number(blob.dataset.pullX || 0);
+          const currentY = Number(blob.dataset.pullY || 0);
+          const nextX = currentX + (targetX - currentX) * 0.09;
+          const nextY = currentY + (targetY - currentY) * 0.09;
+
+          blob.dataset.pullX = nextX.toFixed(2);
+          blob.dataset.pullY = nextY.toFixed(2);
+          blob.style.setProperty("--mouse-pull-x", `${nextX.toFixed(2)}px`);
+          blob.style.setProperty("--mouse-pull-y", `${nextY.toFixed(2)}px`);
+        });
+      }
+
+      function stepOrbit(timestamp) {
+        if (!state.lastOrbitTs) {
+          state.lastOrbitTs = timestamp;
+        }
+
+        const delta = Math.min((timestamp - state.lastOrbitTs) / 1000, 0.04);
+        state.lastOrbitTs = timestamp;
+
+        if (!body.classList.contains("mobile-mode")) {
+          state.orbitPhase += state.orbitSpeed * delta;
+
+          state.orbitCards.forEach((orbitCard) => {
+            const targetAngle = state.orbitPhase + orbitCard.slotAngle;
+
+            if (!orbitCard.paused) {
+              const diff = shortestAngleDelta(orbitCard.angle, targetAngle);
+              const correctionLimit = state.orbitSpeed * (orbitCard.catchingUp ? 2.6 : 0.55);
+              const correctionGain = orbitCard.catchingUp ? 8.4 : 3.6;
+              const correction = clamp(diff * correctionGain, -correctionLimit, correctionLimit);
+
+              orbitCard.angle += (state.orbitSpeed + correction) * delta;
+
+              if (orbitCard.catchingUp && Math.abs(diff) < 0.012) {
+                orbitCard.catchingUp = false;
+              }
+            }
+
+            const rx = (window.innerWidth * state.orbitRx) / 100;
+            const ry = (window.innerHeight * state.orbitRy) / 100;
+            const depth = Math.sin(orbitCard.angle);
+            const depthProgress = (depth + 1) / 2;
+            const x = Math.cos(orbitCard.angle) * rx;
+            const y = depth * ry;
+            const scale = 0.78 + depthProgress * 0.26 + Math.max(depth, 0) * 0.08;
+            const blur = depth < 0 ? Math.abs(depth) * 3.6 : 0;
+            const opacity = 0.48 + depthProgress * 0.52;
+            const zIndex = depth < 0 ? 4 + Math.round((depth + 1) * 2) : 8 + Math.round(depth * 4);
+            const tilt = orbitCard.tilt + depth * 4;
+
+            orbitCard.element.style.setProperty("--orbit-x", `${x}px`);
+            orbitCard.element.style.setProperty("--orbit-y", `${y}px`);
+            orbitCard.element.style.setProperty("--orbit-scale", scale.toFixed(3));
+            orbitCard.element.style.setProperty("--orbit-opacity", opacity.toFixed(3));
+            orbitCard.element.style.setProperty("--orbit-blur", `${blur.toFixed(2)}px`);
+            orbitCard.element.style.setProperty("--card-z", String(zIndex));
+            orbitCard.element.style.setProperty("--orbit-tilt", `${tilt.toFixed(2)}deg`);
+          });
+
+          updateOrbitTargets();
+        }
+
+        updateBlobAttraction();
+
+        requestAnimationFrame(stepOrbit);
+      }
+
+      function setupTiles() {
+        tileGrid.innerHTML = "";
+        state.tileMeta = [];
+
+        const cols = clamp(Math.round(window.innerWidth / 96), 12, 18);
+        const rows = clamp(Math.round(window.innerHeight / 100), 7, 11);
+        tileGrid.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+        tileGrid.style.gridTemplateRows = `repeat(${rows}, 1fr)`;
+
+        const tileWidth = window.innerWidth / cols;
+        const tileHeight = window.innerHeight / rows;
+        const centerX = window.innerWidth / 2;
+        const centerY = window.innerHeight / 2;
+        const maxDistance = Math.hypot(centerX, centerY);
+        let maxDelay = 0;
+
+        for (let row = 0; row < rows; row += 1) {
+          for (let col = 0; col < cols; col += 1) {
+            const tile = document.createElement("div");
+            tile.className = "tile";
+
+            const tileCenterX = (col + 0.5) * tileWidth;
+            const tileCenterY = (row + 0.5) * tileHeight;
+            const distance = Math.hypot(tileCenterX - centerX, tileCenterY - centerY);
+            const delay = Math.round((distance / maxDistance) * 1100);
+            maxDelay = Math.max(maxDelay, delay);
+            tile.style.setProperty("--delay", `${delay}ms`);
+            tileGrid.appendChild(tile);
+            state.tileMeta.push({ element: tile, painted: false, x: 0, y: 0 });
+          }
+        }
+
+        const launchDelay = 520;
+        window.setTimeout(() => {
+          body.classList.add("tiles-launching");
+          state.tileMeta.forEach(({ element }) => element.classList.add("ready"));
+          collectPaintTargets();
+        }, launchDelay);
+
+        const showWorldAt = launchDelay + 220;
+        const finishAt = launchDelay + maxDelay + 640;
+        const brushAt = finishAt + 240;
+
+        window.setTimeout(() => body.classList.add("show-world"), showWorldAt);
+        window.setTimeout(() => {
+          body.classList.add("tiles-complete");
+          body.classList.remove("tiles-launching");
+        }, finishAt);
+        window.setTimeout(enableBrush, brushAt);
+      }
+
+      function collectPaintTargets() {
+        state.paintTargets = Array.from(document.querySelectorAll(".paint-target")).map((element) => {
+          const rect = element.getBoundingClientRect();
+          const padding = Number(element.dataset.paintPadding || 0);
+          return {
+            element,
+            painted: element.classList.contains("painted"),
+            x: rect.left + rect.width / 2,
+            y: rect.top + rect.height / 2,
+            radius: Math.max(rect.width, rect.height) / 2 + padding,
+          };
+        });
+
+        state.tileMeta = state.tileMeta.map((tileMeta) => {
+          const rect = tileMeta.element.getBoundingClientRect();
+          return {
+            ...tileMeta,
+            painted: tileMeta.element.classList.contains("painted"),
+            x: rect.left + rect.width / 2,
+            y: rect.top + rect.height / 2,
+            radius: Math.max(rect.width, rect.height) * 0.72,
+          };
+        });
+      }
+
+      function updateBrushMaskSize() {
+        maskBase.setAttribute("width", window.innerWidth);
+        maskBase.setAttribute("height", window.innerHeight);
+      }
+
+      function stampBrush(x, y, radius = 160) {
+        if (body.classList.contains("mobile-mode")) {
+          return;
+        }
+
+        const previous = state.lastBrushStamp;
+        if (previous && Math.hypot(previous.x - x, previous.y - y) < 36) {
+          return;
+        }
+
+        const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+        circle.setAttribute("cx", x);
+        circle.setAttribute("cy", y);
+        circle.setAttribute("r", radius);
+        circle.setAttribute("fill", "black");
+        brushDots.appendChild(circle);
+        state.lastBrushStamp = { x, y };
+        state.brushStampCount += 1;
+      }
+
+      function updateBrushCursor() {
+        brushCursor.style.left = `${state.brushX}px`;
+        brushCursor.style.top = `${state.brushY}px`;
+      }
+
+      function paintNear(x, y) {
+        const brushRadius = 190;
+        let paintedCount = 0;
+        const totalCount = state.paintTargets.length + 18;
+
+        stampBrush(x, y, brushRadius * 0.9);
+        paintedCount += Math.min(state.brushStampCount, 18);
+
+        state.paintTargets.forEach((target) => {
+          if (!target.painted && Math.hypot(target.x - x, target.y - y) <= target.radius) {
+            target.painted = true;
+            target.element.classList.add("painted");
+          }
+          if (target.painted) {
+            paintedCount += 1;
+          }
+        });
+
+        const ratio = totalCount ? paintedCount / totalCount : 1;
+        if (ratio > 0.92) {
+          body.classList.add("fully-painted");
+        }
+      }
+
+      function requestPaint() {
+        if (!state.brushEnabled || state.ticking) {
+          return;
+        }
+        state.ticking = true;
+        requestAnimationFrame(() => {
+          state.ticking = false;
+          updateBrushCursor();
+          paintNear(state.brushX, state.brushY);
+        });
+      }
+
+      function enableBrush() {
+        if (state.brushEnabled || body.classList.contains("mobile-mode")) {
+          return;
+        }
+        state.brushEnabled = true;
+        body.classList.add("brush-enabled");
+        collectPaintTargets();
+        tileGrid.style.mask = "url(#brushRevealMask)";
+        tileGrid.style.webkitMask = "url(#brushRevealMask)";
+        paintNear(window.innerWidth / 2, window.innerHeight / 2);
+      }
+
+      function enableMobileMode() {
+        body.classList.add("mobile-mode", "show-world", "brush-enabled", "fully-painted", "tiles-complete");
+        document.querySelectorAll(".revealable").forEach((element) => element.classList.add("painted"));
+      }
+
+      function bindInteractions() {
+        window.addEventListener("mousemove", (event) => {
+          state.pointerX = event.clientX;
+          state.pointerY = event.clientY;
+
+          if (!state.brushEnabled) {
+            return;
+          }
+          state.brushX = event.clientX;
+          state.brushY = event.clientY;
+          requestPaint();
+        });
+
+        window.addEventListener("resize", () => {
+          collectPaintTargets();
+          updateBrushMaskSize();
+          updateOrbitTargets();
+          if (body.classList.contains("mobile-mode")) {
+            return;
+          }
+          updateBrushCursor();
+        });
+
+        document.querySelectorAll(".card").forEach((card) => {
+          card.addEventListener("click", (event) => {
+
+            if ((!card.classList.contains("painted") && !body.classList.contains("mobile-mode")) || body.classList.contains("navigating")) {
+              event.preventDefault();
+              return;
+            }
+
+            event.preventDefault();
+            const href = card.getAttribute("href") || "https://qqgg.art";
+            body.classList.add("navigating");
+            card.classList.add("leaving");
+
+            window.setTimeout(() => {
+              window.location.href = href;
+              body.classList.remove("navigating");
+              card.classList.remove("leaving");
+            }, 420);
+          });
+        });
+
+        if (heroName) {
+          heroName.addEventListener("mouseover", (event) => {
+            const targetChar = event.target.closest(".hero-name-char");
+            if (!targetChar) {
+              return;
+            }
+            window.clearTimeout(targetChar._restoreTimer);
+            targetChar.classList.add("is-handwritten");
+          });
+
+          heroName.addEventListener("mouseout", (event) => {
+            const targetChar = event.target.closest(".hero-name-char");
+            if (!targetChar) {
+              return;
+            }
+            window.clearTimeout(targetChar._restoreTimer);
+            targetChar._restoreTimer = window.setTimeout(() => {
+              targetChar.classList.remove("is-handwritten");
+            }, 520);
+          });
+        }
+
+        if (heroTagline) {
+          heroTagline.addEventListener("click", (event) => {
+            const button = event.target.closest(".tagline-adjective");
+            if (!button) {
+              return;
+            }
+
+            const index = Number(button.dataset.taglineIndex);
+            const parts = PAGE_SETTINGS.profile.taglineParts || [];
+            const part = parts[index];
+            if (!part) {
+              return;
+            }
+
+            const blocked = parts
+              .filter((_, partIndex) => partIndex !== index)
+              .map((item) => item.current);
+
+            part.current = pickNextAdjective(getTaglineAdjectivePool(part), part.current, blocked);
+            const label = button.querySelector(".tagline-adjective-label");
+            if (label) {
+              label.textContent = part.current;
+            } else {
+              button.textContent = part.current;
+            }
+            button.classList.remove("is-switching");
+            void button.offsetWidth;
+            button.classList.add("is-switching");
+          });
+        }
+      }
+
+      function init() {
+
+        applyUserContent();
+        renderOrbitCardsFromSettings();
+        setupOrbitCards();
+        bindInteractions();
+        updateBrushMaskSize();
+
+        if (isMobileMode.matches) {
+          enableMobileMode();
+          return;
+        }
+
+        setupTiles();
+        updateBrushCursor();
+      }
+
+      init();
+    })();
+  </script>
+</body>
+</html>
