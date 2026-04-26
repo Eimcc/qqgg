@@ -681,7 +681,7 @@
     .nameplate {
       position: absolute;
       left: 50%;
-      top: calc(50% - min(31vh, 258px));
+      top: calc(50% - clamp(140px, 31vh, 258px));
       transform: translateX(-50%);
       width: min(720px, 92vw);
       text-align: center;
@@ -993,6 +993,16 @@
         min-width: 240px;
       }
 
+      .hero-name {
+        top: -104px;
+        font-size: clamp(2.2rem, 4.4vw, 3.55rem);
+      }
+
+      .nameplate {
+        top: calc(50% - clamp(148px, 27vh, 220px));
+        width: min(88vw, 640px);
+      }
+
       .card {
         width: calc(var(--w) * 0.92);
         height: calc(var(--h) * 0.92);
@@ -1002,6 +1012,10 @@
     @media (max-width: 900px), (hover: none), (pointer: coarse) {
       body {
         touch-action: auto;
+      }
+
+      .content {
+        transform: none;
       }
 
       .tile-grid,
@@ -1015,23 +1029,74 @@
       }
 
       .hero {
-        width: min(34vh, 54vw);
-        min-width: 190px;
-        top: 49%;
+        width: clamp(180px, 48vw, 230px);
+        min-width: 0;
+        top: 51.5%;
       }
 
       .hero-name {
-        top: -74px;
+        top: -96px;
+        font-size: clamp(2rem, 12.8vw, 3.45rem);
+      }
+
+      .hero-shell {
+        margin-top: 28px;
+        padding: 14px;
+        border-radius: 30px;
+      }
+
+      .hero-shell::before {
+        inset: 10px;
       }
 
       .nameplate {
-        top: calc(50% - min(27vh, 206px));
-        width: min(96vw, 720px);
+        top: calc(51.5% - clamp(150px, 22vh, 176px));
+        width: min(92vw, 420px);
+      }
+
+      .nameplate p {
+        font-size: clamp(0.83rem, 3.55vw, 0.96rem);
+        line-height: 1.38;
+        white-space: normal;
+      }
+
+      .eyebrow {
+        min-width: 172px;
+        top: 6px;
+        padding: 8px 14px 10px;
+        font-size: 10px;
+        letter-spacing: 0.14em;
+      }
+
+      .eyebrow::before {
+        top: -16px;
+        height: 16px;
+        background:
+          linear-gradient(rgba(244, 162, 97, 0.7), rgba(244, 162, 97, 0.7)) left bottom / 1.5px 16px no-repeat,
+          linear-gradient(rgba(244, 162, 97, 0.7), rgba(244, 162, 97, 0.7)) right bottom / 1.5px 16px no-repeat;
+      }
+
+      .tagline-text {
+        gap: 0.16em;
+      }
+
+      .tagline-piece {
+        gap: 0.08em;
+      }
+
+      .tagline-divider {
+        margin: 0 0.12em;
+      }
+
+      .bottom-center-image {
+        width: min(86px, 22vw);
+        min-width: 56px;
+        bottom: max(12px, env(safe-area-inset-bottom));
       }
 
       .card {
-        width: calc(var(--w) * 0.78);
-        height: calc(var(--h) * 0.78);
+        width: calc(var(--w) * 0.68);
+        height: calc(var(--h) * 0.68);
       }
 
       .orbit-line.one {
@@ -1563,6 +1628,56 @@
         });
       }
 
+      function applyOrbitCardPose(orbitCard, x, y, scale, opacity, blur, tilt, zIndex) {
+        orbitCard.element.style.setProperty("--orbit-x", `${x}px`);
+        orbitCard.element.style.setProperty("--orbit-y", `${y}px`);
+        orbitCard.element.style.setProperty("--orbit-scale", scale.toFixed(3));
+        orbitCard.element.style.setProperty("--orbit-opacity", opacity.toFixed(3));
+        orbitCard.element.style.setProperty("--orbit-blur", `${blur.toFixed(2)}px`);
+        orbitCard.element.style.setProperty("--card-z", String(zIndex));
+        orbitCard.element.style.setProperty("--orbit-tilt", `${tilt.toFixed(2)}deg`);
+      }
+
+      function renderOrbitCards(isMobile = false) {
+        if (!state.orbitCards.length) {
+          return;
+        }
+
+        const rx = isMobile
+          ? Math.min(window.innerWidth * 0.34, 142)
+          : (window.innerWidth * state.orbitRx) / 100;
+        const ry = isMobile
+          ? Math.min(window.innerHeight * 0.18, 134)
+          : (window.innerHeight * state.orbitRy) / 100;
+        const centerYOffset = isMobile ? Math.min(window.innerHeight * 0.08, 56) : 0;
+
+        state.orbitCards.forEach((orbitCard) => {
+          const depth = Math.sin(orbitCard.angle);
+          const depthProgress = (depth + 1) / 2;
+          const x = Math.cos(orbitCard.angle) * rx;
+          const y = depth * ry + centerYOffset;
+          const scale = isMobile
+            ? 0.74 + depthProgress * 0.18 + Math.max(depth, 0) * 0.05
+            : 0.78 + depthProgress * 0.26 + Math.max(depth, 0) * 0.08;
+          const blur = depth < 0 ? Math.abs(depth) * (isMobile ? 1.6 : 3.6) : 0;
+          const opacity = isMobile
+            ? 0.6 + depthProgress * 0.28
+            : 0.48 + depthProgress * 0.52;
+          const zIndex = depth < 0
+            ? 4 + Math.round((depth + 1) * 2)
+            : 8 + Math.round(depth * (isMobile ? 3 : 4));
+          const tilt = orbitCard.tilt + depth * (isMobile ? 2.2 : 4);
+
+          applyOrbitCardPose(orbitCard, x, y, scale, opacity, blur, tilt, zIndex);
+        });
+
+        updateOrbitTargets();
+      }
+
+      function layoutMobileCards() {
+        renderOrbitCards(true);
+      }
+
       function stepOrbit(timestamp) {
         if (!state.lastOrbitTs) {
           state.lastOrbitTs = timestamp;
@@ -1571,48 +1686,28 @@
         const delta = Math.min((timestamp - state.lastOrbitTs) / 1000, 0.04);
         state.lastOrbitTs = timestamp;
 
-        if (!body.classList.contains("mobile-mode")) {
-          state.orbitPhase += state.orbitSpeed * delta;
+        const isMobile = body.classList.contains("mobile-mode");
+        const orbitSpeed = isMobile ? state.orbitSpeed * 0.38 : state.orbitSpeed;
+        state.orbitPhase += orbitSpeed * delta;
 
-          state.orbitCards.forEach((orbitCard) => {
-            const targetAngle = state.orbitPhase + orbitCard.slotAngle;
+        state.orbitCards.forEach((orbitCard) => {
+          const targetAngle = state.orbitPhase + orbitCard.slotAngle;
 
-            if (!orbitCard.paused) {
-              const diff = shortestAngleDelta(orbitCard.angle, targetAngle);
-              const correctionLimit = state.orbitSpeed * (orbitCard.catchingUp ? 2.6 : 0.55);
-              const correctionGain = orbitCard.catchingUp ? 8.4 : 3.6;
-              const correction = clamp(diff * correctionGain, -correctionLimit, correctionLimit);
+          if (!orbitCard.paused) {
+            const diff = shortestAngleDelta(orbitCard.angle, targetAngle);
+            const correctionLimit = orbitSpeed * (orbitCard.catchingUp ? (isMobile ? 2 : 2.6) : 0.55);
+            const correctionGain = orbitCard.catchingUp ? (isMobile ? 6.2 : 8.4) : (isMobile ? 2.6 : 3.6);
+            const correction = clamp(diff * correctionGain, -correctionLimit, correctionLimit);
 
-              orbitCard.angle += (state.orbitSpeed + correction) * delta;
+            orbitCard.angle += (orbitSpeed + correction) * delta;
 
-              if (orbitCard.catchingUp && Math.abs(diff) < 0.012) {
-                orbitCard.catchingUp = false;
-              }
+            if (orbitCard.catchingUp && Math.abs(diff) < 0.012) {
+              orbitCard.catchingUp = false;
             }
+          }
+        });
 
-            const rx = (window.innerWidth * state.orbitRx) / 100;
-            const ry = (window.innerHeight * state.orbitRy) / 100;
-            const depth = Math.sin(orbitCard.angle);
-            const depthProgress = (depth + 1) / 2;
-            const x = Math.cos(orbitCard.angle) * rx;
-            const y = depth * ry;
-            const scale = 0.78 + depthProgress * 0.26 + Math.max(depth, 0) * 0.08;
-            const blur = depth < 0 ? Math.abs(depth) * 3.6 : 0;
-            const opacity = 0.48 + depthProgress * 0.52;
-            const zIndex = depth < 0 ? 4 + Math.round((depth + 1) * 2) : 8 + Math.round(depth * 4);
-            const tilt = orbitCard.tilt + depth * 4;
-
-            orbitCard.element.style.setProperty("--orbit-x", `${x}px`);
-            orbitCard.element.style.setProperty("--orbit-y", `${y}px`);
-            orbitCard.element.style.setProperty("--orbit-scale", scale.toFixed(3));
-            orbitCard.element.style.setProperty("--orbit-opacity", opacity.toFixed(3));
-            orbitCard.element.style.setProperty("--orbit-blur", `${blur.toFixed(2)}px`);
-            orbitCard.element.style.setProperty("--card-z", String(zIndex));
-            orbitCard.element.style.setProperty("--orbit-tilt", `${tilt.toFixed(2)}deg`);
-          });
-
-          updateOrbitTargets();
-        }
+        renderOrbitCards(isMobile);
 
         updateBlobAttraction();
 
@@ -1776,6 +1871,7 @@
       function enableMobileMode() {
         body.classList.add("mobile-mode", "show-world", "brush-enabled", "fully-painted", "tiles-complete");
         document.querySelectorAll(".revealable").forEach((element) => element.classList.add("painted"));
+        layoutMobileCards();
       }
 
       function bindInteractions() {
@@ -1792,10 +1888,15 @@
         });
 
         window.addEventListener("resize", () => {
+          if (isMobileMode.matches && !body.classList.contains("mobile-mode")) {
+            enableMobileMode();
+          }
+
           collectPaintTargets();
           updateBrushMaskSize();
           updateOrbitTargets();
           if (body.classList.contains("mobile-mode")) {
+            layoutMobileCards();
             return;
           }
           updateBrushCursor();
