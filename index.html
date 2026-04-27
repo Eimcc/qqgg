@@ -550,6 +550,8 @@
       left: 50%;
       top: 50%;
       width: min(36vh, 22vw);
+      --hero-copy-gap: clamp(18px, 3vh, 30px);
+      --hero-copy-stack-gap: clamp(10px, 1.8vh, 16px);
       min-width: 260px;
       max-width: 420px;
       aspect-ratio: 0.78;
@@ -557,24 +559,36 @@
       display: flex;
       align-items: center;
       justify-content: center;
+      overflow: visible;
       z-index: 7;
       transition: filter 0.6s ease-out, transform 0.6s ease-out;
     }
 
-    .hero-name {
+    .hero-copy {
       position: absolute;
       left: 50%;
-      top: -96px;
+      bottom: calc(100% + var(--hero-copy-gap));
+      width: min(720px, 92vw);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: var(--hero-copy-stack-gap);
+      transform: translateX(-50%);
+      z-index: 8;
+    }
+
+    .hero-name {
+      position: static;
       display: inline-block;
       margin: 0;
       color: var(--text-muted);
       font-size: clamp(2.4rem, 4.8vw, 3.9rem);
       line-height: 1;
       letter-spacing: 0.05em;
-      transform: translateX(-50%);
       transition: color 0.6s ease-out, transform 0.28s ease, text-shadow 0.28s ease;
       z-index: 5;
       white-space: nowrap;
+      text-align: center;
     }
 
     .hero-name-char {
@@ -597,7 +611,6 @@
       position: relative;
       width: 100%;
       height: 100%;
-      margin-top: 42px;
       padding: 18px;
       border-radius: 36px;
       background: linear-gradient(165deg, rgba(255, 243, 224, 0.95), rgba(255, 248, 240, 0.88));
@@ -679,13 +692,9 @@
     }
 
     .nameplate {
-      position: absolute;
-      left: 50%;
-      top: calc(50% - clamp(140px, 31vh, 258px));
-      transform: translateX(-50%);
-      width: min(720px, 92vw);
+      position: static;
+      width: 100%;
       text-align: center;
-      z-index: 8;
     }
 
     .eyebrow {
@@ -727,7 +736,8 @@
       color: var(--text-muted);
       font-size: clamp(0.95rem, 1.3vw, 1.08rem);
       line-height: 1.6;
-      white-space: nowrap;
+      white-space: normal;
+      text-wrap: balance;
       transition: color 0.6s ease-out;
     }
 
@@ -745,10 +755,12 @@
     }
 
     .tagline-text {
-      display: inline-flex;
+      display: flex;
       align-items: baseline;
       justify-content: center;
       flex-wrap: wrap;
+      width: 100%;
+      max-width: 100%;
       gap: 0.22em;
     }
 
@@ -990,16 +1002,15 @@
     @media (max-width: 1100px) {
       .hero {
         width: min(42vh, 26vw);
+        --hero-copy-gap: clamp(16px, 2.8vh, 26px);
         min-width: 240px;
       }
 
       .hero-name {
-        top: -104px;
         font-size: clamp(2.2rem, 4.4vw, 3.55rem);
       }
 
-      .nameplate {
-        top: calc(50% - clamp(148px, 27vh, 220px));
+      .hero-copy {
         width: min(88vw, 640px);
       }
 
@@ -1030,17 +1041,17 @@
 
       .hero {
         width: clamp(180px, 48vw, 230px);
+        --hero-copy-gap: clamp(14px, 4.5vw, 22px);
+        --hero-copy-stack-gap: clamp(8px, 2vw, 12px);
         min-width: 0;
         top: 51.5%;
       }
 
       .hero-name {
-        top: -96px;
         font-size: clamp(2rem, 12.8vw, 3.45rem);
       }
 
       .hero-shell {
-        margin-top: 28px;
         padding: 14px;
         border-radius: 30px;
       }
@@ -1049,8 +1060,7 @@
         inset: 10px;
       }
 
-      .nameplate {
-        top: calc(51.5% - clamp(150px, 22vh, 176px));
+      .hero-copy {
         width: min(92vw, 420px);
       }
 
@@ -1115,6 +1125,31 @@
       }
     }
 
+    @media (max-width: 480px) {
+      .hero-copy {
+        width: min(90vw, 360px);
+      }
+
+      .nameplate p {
+        font-size: clamp(0.8rem, 3.8vw, 0.9rem);
+        line-height: 1.45;
+      }
+
+      .tagline-text {
+        flex-direction: column;
+        align-items: center;
+        gap: 0.3em;
+      }
+
+      .tagline-piece {
+        justify-content: center;
+      }
+
+      .tagline-divider {
+        display: none;
+      }
+    }
+
     @media (prefers-reduced-motion: reduce) {
       .blob,
       .orbit-line {
@@ -1154,7 +1189,13 @@
       <section class="content">
         
         <article class="hero revealable paint-target" data-paint-padding="120">
-          <h1 class="hero-name">YOUR NAME</h1>
+          <div class="hero-copy">
+            <h1 class="hero-name">YOUR NAME</h1>
+            
+            <section class="nameplate revealable paint-target" data-paint-padding="140">
+              <p></p>
+            </section>
+          </div>
           <div class="hero-shell">
             <div class="eyebrow">互动式个人主页</div>
             <div class="avatar-visual">
@@ -1170,11 +1211,6 @@
 
         
         <nav aria-label="主页卡片导航"></nav>
-
-        
-        <section class="nameplate revealable paint-target" data-paint-padding="140">
-          <p></p>
-        </section>
 
         <img class="bottom-center-image" src="img/eimcc.png" alt="" aria-hidden="true">
 
@@ -1678,6 +1714,14 @@
         renderOrbitCards(true);
       }
 
+      function resetOrbitCardAngles() {
+        state.orbitCards.forEach((orbitCard) => {
+          orbitCard.angle = state.orbitPhase + orbitCard.slotAngle;
+          orbitCard.paused = false;
+          orbitCard.catchingUp = false;
+        });
+      }
+
       function stepOrbit(timestamp) {
         if (!state.lastOrbitTs) {
           state.lastOrbitTs = timestamp;
@@ -1871,7 +1915,28 @@
       function enableMobileMode() {
         body.classList.add("mobile-mode", "show-world", "brush-enabled", "fully-painted", "tiles-complete");
         document.querySelectorAll(".revealable").forEach((element) => element.classList.add("painted"));
+        resetOrbitCardAngles();
         layoutMobileCards();
+      }
+
+      function disableMobileMode() {
+        body.classList.remove("mobile-mode");
+        resetOrbitCardAngles();
+        renderOrbitCards(false);
+      }
+
+      function syncResponsiveMode() {
+        const shouldUseMobileLayout = isMobileMode.matches;
+        const isUsingMobileLayout = body.classList.contains("mobile-mode");
+
+        if (shouldUseMobileLayout && !isUsingMobileLayout) {
+          enableMobileMode();
+          return;
+        }
+
+        if (!shouldUseMobileLayout && isUsingMobileLayout) {
+          disableMobileMode();
+        }
       }
 
       function bindInteractions() {
@@ -1888,9 +1953,7 @@
         });
 
         window.addEventListener("resize", () => {
-          if (isMobileMode.matches && !body.classList.contains("mobile-mode")) {
-            enableMobileMode();
-          }
+          syncResponsiveMode();
 
           collectPaintTargets();
           updateBrushMaskSize();
@@ -1901,6 +1964,14 @@
           }
           updateBrushCursor();
         });
+
+        if (typeof isMobileMode.addEventListener === "function") {
+          isMobileMode.addEventListener("change", () => {
+            syncResponsiveMode();
+            collectPaintTargets();
+            updateOrbitTargets();
+          });
+        }
 
         document.querySelectorAll(".card").forEach((card) => {
           card.addEventListener("click", (event) => {
@@ -1986,7 +2057,7 @@
         updateBrushMaskSize();
 
         if (isMobileMode.matches) {
-          enableMobileMode();
+          syncResponsiveMode();
           return;
         }
 
