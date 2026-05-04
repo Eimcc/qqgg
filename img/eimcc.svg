@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg width="100%" height="100%" viewBox="0 0 500 88" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xml:space="preserve" xmlns:serif="http://www.serif.com/" style="fill-rule:evenodd;clip-rule:evenodd;stroke-linejoin:round;stroke-miterlimit:2;">
+    <g transform="matrix(1,0,0,1,-550,-412)">
+        <g id="画板2" transform="matrix(1,0,0,0.174791,0,412.60465)">
+            <rect x="550" y="0" width="500" height="500" style="fill:none;"/>
+            <g transform="matrix(1,0,0,5.721128,-93.803135,-1590.973442)">
+                <text x="696.953px" y="335.118px" style="font-family:'Candara', sans-serif;font-size:50px;">——</text>
+                <text x="796.953px" y="339.285px" style="font-family:'AniMeMatrix-MB_EN', 'AniMe Matrix - MB_EN';font-stretch:semi-expanded;font-size:50px;">Eim<tspan x="905.853px " y="339.285px ">c</tspan>c</text>
+                <g transform="matrix(50,0,0,50,1090.653135,335.118371)">
+                </g>
+                <text x="990.653px" y="335.118px" style="font-family:'Candara', sans-serif;font-size:50px;">——</text>
+            </g>
+        </g>
+    </g>
+</svg>

@@ -773,14 +773,19 @@
     .bottom-center-image {
       position: absolute;
       left: 50%;
-      bottom: 22px;
-      width: min(120px, 14vw);
-      min-width: 60px;
-      transform: translateX(-50%);
+      bottom: 0;
+      width: min(240px, 28vw);
+      min-width: 120px;
+      aspect-ratio: 1;
+      transform: translate(-50%, 42%);
       display: block;
       pointer-events: none;
       z-index: 6;
+      background: hsl(var(--wheel-hue) 70% 72% / 0.62);
       filter: drop-shadow(0 12px 28px rgba(93, 64, 55, 0.16));
+      mask: url("img/eimcc.svg") center / contain no-repeat;
+      -webkit-mask: url("img/eimcc.svg") center / contain no-repeat;
+      transition: background 0.6s ease-out, filter 0.6s ease-out;
     }
 
     .tagline-text {
@@ -1128,9 +1133,9 @@
       }
 
       .bottom-center-image {
-        width: min(86px, 22vw);
-        min-width: 56px;
-        bottom: max(12px, env(safe-area-inset-bottom));
+        width: min(172px, 44vw);
+        min-width: 112px;
+        bottom: env(safe-area-inset-bottom);
       }
 
       .card {
@@ -1245,7 +1250,7 @@
         
         <nav aria-label="主页卡片导航"></nav>
 
-        <img class="bottom-center-image" src="img/eimcc.png" alt="" aria-hidden="true">
+        <span class="bottom-center-image" aria-hidden="true"></span>
 
       </section>
     </section>
