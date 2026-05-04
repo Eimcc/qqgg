@@ -606,7 +606,7 @@
       position: static;
       display: inline-block;
       margin: 0;
-      color: var(--text-muted);
+      color: hsl(var(--wheel-hue) 42% 34%);
       font-size: clamp(2.4rem, 4.8vw, 3.9rem);
       line-height: 1;
       letter-spacing: 0.05em;
@@ -639,7 +639,7 @@
       padding: 18px;
       border-radius: 36px;
       background: linear-gradient(165deg, hsl(var(--wheel-hue) 74% 95% / 0.95), hsl(var(--wheel-soft-hue) 62% 97% / 0.88));
-      border: 3px dashed var(--accent);
+      border: 3px dashed hsl(var(--wheel-hue) 82% 58%);
       box-shadow: 0 18px 50px rgba(93, 64, 55, 0.12);
       overflow: hidden;
       transition: background 0.6s ease-out, border-color 0.6s ease-out, box-shadow 0.6s ease-out;
@@ -737,7 +737,7 @@
       border-radius: 18px 18px 22px 22px;
       background: hsl(var(--wheel-hue) 72% 97% / 0.94);
       border: 1.5px solid hsl(var(--wheel-hue) 82% 58% / 0.18);
-      color: var(--text-muted);
+      color: hsl(var(--wheel-hue) 24% 48%);
       font-size: 12px;
       letter-spacing: 0.18em;
       text-transform: uppercase;
@@ -762,7 +762,7 @@
 
     .nameplate p {
       margin: 0;
-      color: var(--text-muted);
+      color: hsl(var(--wheel-hue) 26% 34%);
       font-size: clamp(0.95rem, 1.3vw, 1.08rem);
       line-height: 1.6;
       white-space: normal;
@@ -819,7 +819,7 @@
       border: 0;
       padding: 0 0.18em 0.08em;
       background: none;
-      color: color-mix(in srgb, var(--accent-hot) 62%, var(--text-main) 38%);
+      color: hsl(var(--wheel-hue) 64% 42%);
       font: inherit;
       font-family: "PingFangMengMengDa", "Segoe Print", "Bradley Hand", "Comic Sans MS", "Marker Felt", cursive;
       font-size: 1.26em;
@@ -859,7 +859,7 @@
     }
 
     .tagline-adjective:hover {
-      color: var(--accent-hot);
+      color: hsl(var(--wheel-hue) 72% 48%);
       text-decoration-color: hsl(var(--wheel-hot-hue) 68% 56% / 0.78);
       text-shadow: 0 6px 16px hsl(var(--wheel-hot-hue) 68% 56% / 0.14);
       transform: rotate(var(--tagline-tilt, -2deg)) translateY(-2px) scale(1.03);
@@ -903,7 +903,7 @@
     body.mobile-mode .hero .hero-name,
     .nameplate.painted p,
     body.mobile-mode .nameplate p {
-      color: var(--text-main);
+      color: hsl(var(--wheel-hue) 42% 34%);
     }
 
     .orbit-nav {
